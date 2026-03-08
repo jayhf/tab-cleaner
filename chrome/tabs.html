@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Tab Manager</title>
+  <link rel="stylesheet" href="tabs.css">
+</head>
+<body>
+  <div class="header">
+    <div class="header-top">
+      <h1>Tab Manager</h1>
+      <div class="header-actions">
+        <button id="merge-btn" class="merge-btn" title="Move all tabs into this window">Merge Windows</button>
+        <button id="cleanup-btn" class="cleanup-btn" title="Close all tabs matching cleanup rules">Cleanup</button>
+        <button id="edit-rules-btn" class="edit-rules-btn" title="Edit cleanup rules">Edit Rules</button>
+      </div>
+    </div>
+    <div class="stats" id="stats"></div>
+    <input type="text" id="search" placeholder="Search tabs..." autofocus>
+  </div>
+  <div id="rules-panel" class="rules-panel" style="display:none">
+    <div class="rules-header">Cleanup Rules</div>
+    <div id="rules-list"></div>
+    <div id="rules-empty" class="rules-empty">No cleanup rules yet. Click "+ Cleanup" on a domain group to add one.</div>
+  </div>
+  <div id="container"></div>
+  <script src="tabs.js"></script>
+</body>
+</html>
