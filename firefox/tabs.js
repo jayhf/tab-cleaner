@@ -13,14 +13,14 @@ let cleanupRules = [];
 let showIncognito = false;
 
 async function loadCleanupRules() {
-  const data = await chrome.storage.local.get('cleanupRules');
+  const data = await browser.storage.local.get('cleanupRules');
   cleanupRules = data.cleanupRules || [];
   updateCleanupBtn();
   renderRules();
 }
 
 async function saveCleanupRules() {
-  await chrome.storage.local.set({ cleanupRules });
+  await browser.storage.local.set({ cleanupRules });
   updateCleanupBtn();
   renderRules();
 }
@@ -76,7 +76,7 @@ function renderRules() {
 
 async function runCleanup() {
   if (cleanupRules.length === 0) return;
-  const tabs = await chrome.tabs.query({});
+  const tabs = await browser.tabs.query({});
   const toClose = tabs.filter(t => {
     try {
       const domain = new URL(t.url).hostname;
@@ -84,7 +84,7 @@ async function runCleanup() {
     } catch { return false; }
   });
   if (toClose.length === 0) return;
-  await chrome.tabs.remove(toClose.map(t => t.id));
+  await browser.tabs.remove(toClose.map(t => t.id));
   rulesPanel.style.display = 'none';
   loadTabs();
 }
@@ -92,8 +92,8 @@ async function runCleanup() {
 const mergeBtn = document.getElementById('merge-btn');
 
 mergeBtn.addEventListener('click', async () => {
-  const currentWindow = await chrome.windows.getCurrent();
-  const allWindows = await chrome.windows.getAll({ populate: true });
+  const currentWindow = await browser.windows.getCurrent();
+  const allWindows = await browser.windows.getAll({ populate: true });
   const tabIds = [];
   for (const win of allWindows) {
     if (win.id === currentWindow.id) continue;
@@ -102,7 +102,7 @@ mergeBtn.addEventListener('click', async () => {
     }
   }
   if (tabIds.length > 0) {
-    await chrome.tabs.move(tabIds, { windowId: currentWindow.id, index: -1 });
+    await browser.tabs.move(tabIds, { windowId: currentWindow.id, index: -1 });
   }
   loadTabs();
 });
@@ -112,8 +112,8 @@ const importBtn = document.getElementById('import-btn');
 const importFile = document.getElementById('import-file');
 
 exportBtn.addEventListener('click', async () => {
-  const tabs = await chrome.tabs.query({});
-  const selfUrl = chrome.runtime.getURL('tabs.html');
+  const tabs = await browser.tabs.query({});
+  const selfUrl = browser.runtime.getURL('tabs.html');
 
   const windowIdMap = {};
   let nextWindow = 0;
@@ -167,16 +167,16 @@ importFile.addEventListener('change', async (e) => {
     }
 
     for (const group of Object.values(byWindow)) {
-      const win = await chrome.windows.create({ incognito: group.incognito });
+      const win = await browser.windows.create({ incognito: group.incognito });
       for (const tab of group.tabs) {
-        await chrome.tabs.create({
+        await browser.tabs.create({
           windowId: win.id,
           url: tab.url,
           pinned: tab.pinned || false,
         });
       }
       const defaultTab = win.tabs?.[0];
-      if (defaultTab) await chrome.tabs.remove(defaultTab.id);
+      if (defaultTab) await browser.tabs.remove(defaultTab.id);
     }
 
     loadTabs();
@@ -192,13 +192,13 @@ editRulesBtn.addEventListener('click', () => {
 });
 
 async function loadTabs() {
-  allTabs = await chrome.tabs.query({});
+  allTabs = await browser.tabs.query({});
   render();
 }
 
 function render() {
   const query = searchInput.value.toLowerCase();
-  const selfUrl = chrome.runtime.getURL('tabs.html');
+  const selfUrl = browser.runtime.getURL('tabs.html');
   const filtered = allTabs.filter(t =>
     !t.url.startsWith(selfUrl) &&
     (showIncognito || !t.incognito) &&
@@ -262,7 +262,7 @@ function render() {
     const toggleCleanupBtn = document.createElement('button');
     const inCleanup = cleanupRules.includes(domain);
     toggleCleanupBtn.className = inCleanup ? 'add-cleanup remove-cleanup' : 'add-cleanup';
-    toggleCleanupBtn.textContent = inCleanup ? '− Cleanup' : '+ Cleanup';
+    toggleCleanupBtn.textContent = inCleanup ? '\u2212 Cleanup' : '+ Cleanup';
     toggleCleanupBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       if (inCleanup) {
@@ -278,7 +278,7 @@ function render() {
     closeAllBtn.textContent = 'Close All';
     closeAllBtn.addEventListener('click', async () => {
       const tabIds = group.map(t => t.id);
-      await chrome.tabs.remove(tabIds);
+      await browser.tabs.remove(tabIds);
       loadTabs();
     });
     buttons.appendChild(closeAllBtn);
@@ -323,7 +323,7 @@ function render() {
         keepOneBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
           const toClose = dupes.slice(1).map(t => t.id);
-          await chrome.tabs.remove(toClose);
+          await browser.tabs.remove(toClose);
           loadTabs();
         });
         subBtns.appendChild(keepOneBtn);
@@ -333,7 +333,7 @@ function render() {
         closeAllDupesBtn.textContent = 'Close All';
         closeAllDupesBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
-          await chrome.tabs.remove(dupes.map(t => t.id));
+          await browser.tabs.remove(dupes.map(t => t.id));
           loadTabs();
         });
         subBtns.appendChild(closeAllDupesBtn);
@@ -392,15 +392,15 @@ function render() {
         closeBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
           tabEl.classList.add('closing');
-          await chrome.tabs.remove(tab.id);
+          await browser.tabs.remove(tab.id);
           setTimeout(loadTabs, 300);
         });
         tabEl.appendChild(closeBtn);
 
         // Click tab row to switch to it
         tabEl.addEventListener('click', () => {
-          chrome.tabs.update(tab.id, { active: true });
-          chrome.windows.update(tab.windowId, { focused: true });
+          browser.tabs.update(tab.id, { active: true });
+          browser.windows.update(tab.windowId, { focused: true });
         });
 
         groupEl.appendChild(tabEl);
@@ -430,16 +430,16 @@ searchInput.addEventListener('input', render);
 
 showIncognitoCheckbox.addEventListener('change', async () => {
   showIncognito = showIncognitoCheckbox.checked;
-  await chrome.storage.local.set({ showIncognito });
+  await browser.storage.local.set({ showIncognito });
   render();
 });
 
-chrome.tabs.onCreated.addListener(loadTabs);
-chrome.tabs.onRemoved.addListener(loadTabs);
-chrome.tabs.onUpdated.addListener(loadTabs);
+browser.tabs.onCreated.addListener(loadTabs);
+browser.tabs.onRemoved.addListener(loadTabs);
+browser.tabs.onUpdated.addListener(loadTabs);
 
 async function init() {
-  const data = await chrome.storage.local.get('showIncognito');
+  const data = await browser.storage.local.get('showIncognito');
   showIncognito = data.showIncognito || false;
   showIncognitoCheckbox.checked = showIncognito;
   await loadCleanupRules();

@@ -405,7 +405,7 @@ h1 {
 }
 
 .tab-incognito .tab-title::after {
-  content: 'incognito';
+  content: 'private';
   font-size: 10px;
   color: #ba68c8;
   margin-left: 8px;

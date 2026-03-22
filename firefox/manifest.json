@@ -2,11 +2,16 @@
   "manifest_version": 3,
   "name": "Tab Manager MCP",
   "version": "1.0.0",
-  "description": "Chrome tab manager with MCP support for Claude",
+  "description": "Firefox tab manager with MCP support for Claude",
   "incognito": "spanning",
   "permissions": ["tabs", "alarms", "storage"],
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "tab-manager-mcp@example.com"
+    }
+  },
   "background": {
-    "service_worker": "background.js"
+    "scripts": ["background.js"]
   },
   "action": {
     "default_title": "Open Tab Manager"
