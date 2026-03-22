@@ -1,5 +1,9 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
+:root {
+  --private-label: 'incognito';
+}
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   background: #1a1a1a;
@@ -399,13 +403,13 @@ h1 {
   accent-color: #ba68c8;
 }
 
-/* Incognito tab styling */
+/* Incognito/private tab styling */
 .tab-incognito {
   border-left: 3px solid #ba68c8;
 }
 
 .tab-incognito .tab-title::after {
-  content: 'private';
+  content: var(--private-label);
   font-size: 10px;
   color: #ba68c8;
   margin-left: 8px;

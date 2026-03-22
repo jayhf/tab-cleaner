@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <title>Tab Manager</title>
-  <link rel="stylesheet" href="tabs.css">
+  <link rel="stylesheet" href="./style.css">
 </head>
 <body>
   <div class="header">
@@ -21,9 +21,9 @@
     <div class="stats" id="stats"></div>
     <div class="search-row">
       <input type="text" id="search" placeholder="Search tabs..." autofocus>
-      <label class="incognito-toggle" title="Show incognito tabs">
+      <label class="incognito-toggle" id="incognito-toggle" title="Show private/incognito tabs">
         <input type="checkbox" id="show-incognito">
-        <span class="incognito-label">Incognito</span>
+        <span class="incognito-label" id="incognito-label">Incognito</span>
       </label>
     </div>
   </div>
@@ -33,6 +33,6 @@
     <div id="rules-empty" class="rules-empty">No cleanup rules yet. Click "+ Cleanup" on a domain group to add one.</div>
   </div>
   <div id="container"></div>
-  <script src="tabs.js"></script>
+  <script type="module" src="./main.ts"></script>
 </body>
 </html>

@@ -1,20 +1,28 @@
-const container = document.getElementById('container');
-const searchInput = document.getElementById('search');
-const statsEl = document.getElementById('stats');
-const cleanupBtn = document.getElementById('cleanup-btn');
-const editRulesBtn = document.getElementById('edit-rules-btn');
-const rulesPanel = document.getElementById('rules-panel');
-const rulesList = document.getElementById('rules-list');
-const rulesEmpty = document.getElementById('rules-empty');
-const showIncognitoCheckbox = document.getElementById('show-incognito');
+const container = document.getElementById('container')!;
+const searchInput = document.getElementById('search') as HTMLInputElement;
+const statsEl = document.getElementById('stats')!;
+const cleanupBtn = document.getElementById('cleanup-btn') as HTMLButtonElement;
+const editRulesBtn = document.getElementById('edit-rules-btn')!;
+const rulesPanel = document.getElementById('rules-panel')!;
+const rulesList = document.getElementById('rules-list')!;
+const rulesEmpty = document.getElementById('rules-empty')!;
+const showIncognitoCheckbox = document.getElementById('show-incognito') as HTMLInputElement;
+const incognitoLabel = document.getElementById('incognito-label')!;
 
-let allTabs = [];
-let cleanupRules = [];
+let allTabs: Browser.tabs.Tab[] = [];
+let cleanupRules: string[] = [];
 let showIncognito = false;
+
+// Set browser-appropriate labels
+const isFirefox = navigator.userAgent.includes('Firefox');
+if (isFirefox) {
+  incognitoLabel.textContent = 'Private';
+  document.documentElement.style.setProperty('--private-label', "'private'");
+}
 
 async function loadCleanupRules() {
   const data = await browser.storage.local.get('cleanupRules');
-  cleanupRules = data.cleanupRules || [];
+  cleanupRules = (data as Record<string, unknown>).cleanupRules as string[] || [];
   updateCleanupBtn();
   renderRules();
 }
@@ -25,7 +33,7 @@ async function saveCleanupRules() {
   renderRules();
 }
 
-async function addCleanupRule(domain) {
+async function addCleanupRule(domain: string) {
   if (!cleanupRules.includes(domain)) {
     cleanupRules.push(domain);
     cleanupRules.sort();
@@ -34,12 +42,12 @@ async function addCleanupRule(domain) {
   }
 }
 
-async function removeCleanupRule(domain) {
-  cleanupRules = cleanupRules.filter(r => r !== domain);
+async function removeCleanupRule(domain: string) {
+  cleanupRules = cleanupRules.filter((r) => r !== domain);
   await saveCleanupRules();
 }
 
-function updateCleanupBtn(tabCount) {
+function updateCleanupBtn(tabCount?: number) {
   if (tabCount != null && tabCount > 0) {
     cleanupBtn.textContent = `Cleanup (${tabCount})`;
   } else if (cleanupRules.length > 0) {
@@ -70,70 +78,71 @@ function renderRules() {
 
     rulesList.appendChild(row);
   }
-  // Re-render tab list to update "+ Cleanup" button states
   render();
 }
 
 async function runCleanup() {
   if (cleanupRules.length === 0) return;
   const tabs = await browser.tabs.query({});
-  const toClose = tabs.filter(t => {
+  const toClose = tabs.filter((t) => {
     try {
-      const domain = new URL(t.url).hostname;
+      const domain = new URL(t.url!).hostname;
       return cleanupRules.includes(domain);
-    } catch { return false; }
+    } catch {
+      return false;
+    }
   });
   if (toClose.length === 0) return;
-  await browser.tabs.remove(toClose.map(t => t.id));
+  await browser.tabs.remove(toClose.map((t) => t.id!));
   rulesPanel.style.display = 'none';
   loadTabs();
 }
 
-const mergeBtn = document.getElementById('merge-btn');
+const mergeBtn = document.getElementById('merge-btn')!;
 
 mergeBtn.addEventListener('click', async () => {
   const currentWindow = await browser.windows.getCurrent();
   const allWindows = await browser.windows.getAll({ populate: true });
-  const tabIds = [];
+  const tabIds: number[] = [];
   for (const win of allWindows) {
     if (win.id === currentWindow.id) continue;
-    for (const tab of win.tabs) {
-      tabIds.push(tab.id);
+    for (const tab of win.tabs!) {
+      tabIds.push(tab.id!);
     }
   }
   if (tabIds.length > 0) {
-    await browser.tabs.move(tabIds, { windowId: currentWindow.id, index: -1 });
+    await browser.tabs.move(tabIds, { windowId: currentWindow.id!, index: -1 });
   }
   loadTabs();
 });
 
-const exportBtn = document.getElementById('export-btn');
-const importBtn = document.getElementById('import-btn');
-const importFile = document.getElementById('import-file');
+const exportBtn = document.getElementById('export-btn')!;
+const importBtn = document.getElementById('import-btn')!;
+const importFile = document.getElementById('import-file') as HTMLInputElement;
 
 exportBtn.addEventListener('click', async () => {
   const tabs = await browser.tabs.query({});
-  const selfUrl = browser.runtime.getURL('tabs.html');
+  const selfUrl = browser.runtime.getURL('/tabs.html');
 
-  const windowIdMap = {};
+  const windowIdMap: Record<number, number> = {};
   let nextWindow = 0;
   for (const tab of tabs) {
-    if (!(tab.windowId in windowIdMap)) {
-      windowIdMap[tab.windowId] = nextWindow++;
+    if (!(tab.windowId! in windowIdMap)) {
+      windowIdMap[tab.windowId!] = nextWindow++;
     }
   }
 
-  const data = {
+  const data: TabExportData = {
     version: 1,
     exportedAt: new Date().toISOString(),
     tabs: tabs
-      .filter(t => !t.url.startsWith(selfUrl))
-      .map(t => ({
-        url: t.url,
+      .filter((t) => !t.url!.startsWith(selfUrl))
+      .map((t) => ({
+        url: t.url!,
         title: t.title || '',
         pinned: t.pinned || false,
-        incognito: t.incognito || false,
-        window: windowIdMap[t.windowId],
+        incognito: t.incognito,
+        window: windowIdMap[t.windowId!],
       })),
   };
 
@@ -149,17 +158,17 @@ exportBtn.addEventListener('click', async () => {
 importBtn.addEventListener('click', () => importFile.click());
 
 importFile.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
+  const file = (e.target as HTMLInputElement).files?.[0];
   if (!file) return;
   try {
     const text = await file.text();
-    const data = JSON.parse(text);
+    const data: TabExportData = JSON.parse(text);
     if (!data.tabs || !Array.isArray(data.tabs)) {
       alert('Invalid tab export file.');
       return;
     }
 
-    const byWindow = {};
+    const byWindow: Record<string, { incognito: boolean; tabs: TabExportData['tabs'] }> = {};
     for (const tab of data.tabs) {
       const key = `${tab.incognito ? 'incognito' : 'regular'}-${tab.window ?? 0}`;
       if (!byWindow[key]) byWindow[key] = { incognito: tab.incognito || false, tabs: [] };
@@ -168,20 +177,21 @@ importFile.addEventListener('change', async (e) => {
 
     for (const group of Object.values(byWindow)) {
       const win = await browser.windows.create({ incognito: group.incognito });
+      if (!win) continue;
       for (const tab of group.tabs) {
         await browser.tabs.create({
-          windowId: win.id,
+          windowId: win.id!,
           url: tab.url,
           pinned: tab.pinned || false,
         });
       }
       const defaultTab = win.tabs?.[0];
-      if (defaultTab) await browser.tabs.remove(defaultTab.id);
+      if (defaultTab) await browser.tabs.remove(defaultTab.id!);
     }
 
     loadTabs();
-  } catch (err) {
-    alert('Failed to import tabs: ' + err.message);
+  } catch (err: unknown) {
+    alert('Failed to import tabs: ' + (err as Error).message);
   }
   importFile.value = '';
 });
@@ -198,29 +208,30 @@ async function loadTabs() {
 
 function render() {
   const query = searchInput.value.toLowerCase();
-  const selfUrl = browser.runtime.getURL('tabs.html');
-  const filtered = allTabs.filter(t =>
-    !t.url.startsWith(selfUrl) &&
-    (showIncognito || !t.incognito) &&
-    ((t.title || '').toLowerCase().includes(query) ||
-    (t.url || '').toLowerCase().includes(query))
+  const selfUrl = browser.runtime.getURL('/tabs.html');
+  const filtered = allTabs.filter(
+    (t) =>
+      !t.url!.startsWith(selfUrl) &&
+      (showIncognito || !t.incognito) &&
+      ((t.title || '').toLowerCase().includes(query) || (t.url || '').toLowerCase().includes(query)),
   );
 
-  // Group by domain
-  const groups = {};
+  const groups: Record<string, Browser.tabs.Tab[]> = {};
   for (const tab of filtered) {
     let domain = 'other';
-    try { domain = new URL(tab.url).hostname; } catch {}
+    try {
+      domain = new URL(tab.url!).hostname;
+    } catch {}
     if (!groups[domain]) groups[domain] = [];
     groups[domain].push(tab);
   }
 
-  // Sort tabs within groups by lastAccessed desc
   for (const domain in groups) {
-    groups[domain].sort((a, b) => (b.lastAccessed || 0) - (a.lastAccessed || 0));
+    groups[domain].sort(
+      (a, b) => ((b as any).lastAccessed || 0) - ((a as any).lastAccessed || 0),
+    );
   }
 
-  // Sort groups: non-cleanup first, then cleanup-marked, alphabetical within each
   const sortedDomains = Object.keys(groups).sort((a, b) => {
     const aCleanup = cleanupRules.includes(a) ? 1 : 0;
     const bCleanup = cleanupRules.includes(b) ? 1 : 0;
@@ -228,14 +239,18 @@ function render() {
     return a.localeCompare(b);
   });
 
-  const cleanupCount = filtered.filter(t => {
-    try { return cleanupRules.includes(new URL(t.url).hostname); }
-    catch { return false; }
+  const cleanupCount = filtered.filter((t) => {
+    try {
+      return cleanupRules.includes(new URL(t.url!).hostname);
+    } catch {
+      return false;
+    }
   }).length;
   updateCleanupBtn(cleanupCount);
-  statsEl.textContent = cleanupCount > 0
-    ? `${filtered.length} tabs in ${sortedDomains.length} groups \u00b7 ${cleanupCount} marked for cleanup`
-    : `${filtered.length} tabs in ${sortedDomains.length} groups`;
+  statsEl.textContent =
+    cleanupCount > 0
+      ? `${filtered.length} tabs in ${sortedDomains.length} groups \u00b7 ${cleanupCount} marked for cleanup`
+      : `${filtered.length} tabs in ${sortedDomains.length} groups`;
 
   container.innerHTML = '';
   for (const domain of sortedDomains) {
@@ -243,7 +258,6 @@ function render() {
     const groupEl = document.createElement('div');
     groupEl.className = 'group';
 
-    // Group header
     const header = document.createElement('div');
     header.className = 'group-header';
 
@@ -277,7 +291,7 @@ function render() {
     closeAllBtn.className = 'close-group';
     closeAllBtn.textContent = 'Close All';
     closeAllBtn.addEventListener('click', async () => {
-      const tabIds = group.map(t => t.id);
+      const tabIds = group.map((t) => t.id!);
       await browser.tabs.remove(tabIds);
       loadTabs();
     });
@@ -287,15 +301,13 @@ function render() {
     header.appendChild(buttons);
     groupEl.appendChild(header);
 
-    // Sub-group tabs by base URL (origin + pathname, ignoring query/hash)
-    const urlGroups = {};
+    const urlGroups: Record<string, Browser.tabs.Tab[]> = {};
     for (const tab of group) {
-      const base = baseUrl(tab.url);
+      const base = baseUrl(tab.url!);
       if (!urlGroups[base]) urlGroups[base] = [];
       urlGroups[base].push(tab);
     }
 
-    // Render tabs, inserting sub-group headers for duplicates
     const sortedBases = Object.keys(urlGroups).sort();
     for (const base of sortedBases) {
       const dupes = urlGroups[base];
@@ -322,7 +334,7 @@ function render() {
         keepOneBtn.textContent = 'Keep 1';
         keepOneBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
-          const toClose = dupes.slice(1).map(t => t.id);
+          const toClose = dupes.slice(1).map((t) => t.id!);
           await browser.tabs.remove(toClose);
           loadTabs();
         });
@@ -333,7 +345,7 @@ function render() {
         closeAllDupesBtn.textContent = 'Close All';
         closeAllDupesBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
-          await browser.tabs.remove(dupes.map(t => t.id));
+          await browser.tabs.remove(dupes.map((t) => t.id!));
           loadTabs();
         });
         subBtns.appendChild(closeAllDupesBtn);
@@ -348,12 +360,13 @@ function render() {
         if (dupes.length > 1) tabEl.classList.add('tab-in-subgroup');
         if (tab.incognito) tabEl.classList.add('tab-incognito');
 
-        // Favicon
         if (tab.favIconUrl) {
           const img = document.createElement('img');
           img.className = 'favicon';
           img.src = tab.favIconUrl;
-          img.onerror = () => { img.style.display = 'none'; };
+          img.onerror = () => {
+            img.style.display = 'none';
+          };
           tabEl.appendChild(img);
         } else {
           const placeholder = document.createElement('div');
@@ -361,7 +374,6 @@ function render() {
           tabEl.appendChild(placeholder);
         }
 
-        // Info
         const info = document.createElement('div');
         info.className = 'tab-info';
 
@@ -377,30 +389,28 @@ function render() {
 
         tabEl.appendChild(info);
 
-        // Last accessed time
-        if (tab.lastAccessed) {
+        const lastAccessed = (tab as any).lastAccessed as number | undefined;
+        if (lastAccessed) {
           const time = document.createElement('div');
           time.className = 'tab-time';
-          time.textContent = formatTime(tab.lastAccessed);
+          time.textContent = formatTime(lastAccessed);
           tabEl.appendChild(time);
         }
 
-        // Close button
         const closeBtn = document.createElement('button');
         closeBtn.className = 'close-tab';
         closeBtn.textContent = '\u00d7';
         closeBtn.addEventListener('click', async (e) => {
           e.stopPropagation();
           tabEl.classList.add('closing');
-          await browser.tabs.remove(tab.id);
+          await browser.tabs.remove(tab.id!);
           setTimeout(loadTabs, 300);
         });
         tabEl.appendChild(closeBtn);
 
-        // Click tab row to switch to it
         tabEl.addEventListener('click', () => {
-          browser.tabs.update(tab.id, { active: true });
-          browser.windows.update(tab.windowId, { focused: true });
+          browser.tabs.update(tab.id!, { active: true });
+          browser.windows.update(tab.windowId!, { focused: true });
         });
 
         groupEl.appendChild(tabEl);
@@ -409,21 +419,6 @@ function render() {
 
     container.appendChild(groupEl);
   }
-}
-
-function baseUrl(url) {
-  try {
-    const u = new URL(url);
-    return u.origin + u.pathname;
-  } catch { return url || ''; }
-}
-
-function formatTime(timestamp) {
-  const diff = Date.now() - timestamp;
-  if (diff < 60000) return 'just now';
-  if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-  if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
-  return new Date(timestamp).toLocaleDateString();
 }
 
 searchInput.addEventListener('input', render);
@@ -440,7 +435,7 @@ browser.tabs.onUpdated.addListener(loadTabs);
 
 async function init() {
   const data = await browser.storage.local.get('showIncognito');
-  showIncognito = data.showIncognito || false;
+  showIncognito = (data as Record<string, unknown>).showIncognito as boolean || false;
   showIncognitoCheckbox.checked = showIncognito;
   await loadCleanupRules();
   loadTabs();

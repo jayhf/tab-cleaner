@@ -1,0 +1,26 @@
+{
+  "name": "tab-cleaner",
+  "version": "1.0.0",
+  "description": "Chrome extension for managing tabs with optional MCP support for Claude.",
+  "scripts": {
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "build:firefox": "wxt build -b firefox"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jayhf/tab-cleaner.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jayhf/tab-cleaner/issues"
+  },
+  "homepage": "https://github.com/jayhf/tab-cleaner#readme",
+  "devDependencies": {
+    "typescript": "^5.9.3",
+    "wxt": "^0.20.20"
+  }
+}
