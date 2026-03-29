@@ -16,7 +16,7 @@ export default defineConfig({
       ? {
           browser_specific_settings: {
             gecko: {
-              id: 'tab-manager-mcp@example.com',
+              id: 'tab-manager-mcp@jayf.engineer',
             },
           },
         }

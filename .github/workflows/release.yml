@@ -18,11 +18,24 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+
+      # Use run number as version so each build gets a unique, incrementing version
+      - name: Set version
+        run: |
+          VERSION="1.0.${{ github.run_number }}"
+          npm pkg set version="$VERSION"
+
       - run: npx wxt build -b firefox
       - run: npx wxt build -b chrome
 
-      - name: Package Firefox XPI
-        run: cd .output/firefox-mv2 && zip -r ../../tab-cleaner-firefox.xpi .
+      - name: Sign Firefox XPI
+        run: npx web-ext sign --channel=unlisted --source-dir=.output/firefox-mv2 --artifacts-dir=.output/signed
+        env:
+          WEB_EXT_API_KEY: ${{ secrets.AMO_API_KEY }}
+          WEB_EXT_API_SECRET: ${{ secrets.AMO_API_SECRET }}
+
+      - name: Rename signed XPI
+        run: mv .output/signed/*.xpi tab-cleaner-firefox.xpi
 
       - name: Package Chrome ZIP
         run: cd .output/chrome-mv3 && zip -r ../../tab-cleaner-chrome.zip .
