@@ -1,0 +1,39 @@
+name: Build and Release
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx wxt build -b firefox
+      - run: npx wxt build -b chrome
+
+      - name: Package Firefox XPI
+        run: cd .output/firefox-mv2 && zip -r ../../tab-cleaner-firefox.xpi .
+
+      - name: Package Chrome ZIP
+        run: cd .output/chrome-mv3 && zip -r ../../tab-cleaner-chrome.zip .
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: Latest Build
+          prerelease: true
+          make_latest: true
+          files: |
+            tab-cleaner-firefox.xpi
+            tab-cleaner-chrome.zip
