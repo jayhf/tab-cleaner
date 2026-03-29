@@ -66,7 +66,8 @@ export default defineBackground(() => {
   browser.alarms.create('keepalive', { periodInMinutes: 0.5 });
   browser.alarms.onAlarm.addListener(() => checkAndConnect());
 
-  browser.action.onClicked.addListener(async () => {
+  const action = browser.action || browser.browserAction;
+  action.onClicked.addListener(async () => {
     const managerUrl = browser.runtime.getURL('/tabs.html');
     const existing = await browser.tabs.query({ url: managerUrl });
     if (existing.length > 0) {
