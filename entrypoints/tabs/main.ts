@@ -175,20 +175,28 @@ importFile.addEventListener('change', async (e) => {
       byWindow[key].tabs.push(tab);
     }
 
+    const failed: string[] = [];
     for (const group of Object.values(byWindow)) {
       const win = await browser.windows.create({ incognito: group.incognito });
       if (!win) continue;
       for (const tab of group.tabs) {
-        await browser.tabs.create({
-          windowId: win.id!,
-          url: tab.url,
-          pinned: tab.pinned || false,
-        });
+        try {
+          await browser.tabs.create({
+            windowId: win.id!,
+            url: tab.url,
+            pinned: tab.pinned || false,
+          });
+        } catch {
+          failed.push(tab.url);
+        }
       }
       const defaultTab = win.tabs?.[0];
       if (defaultTab) await browser.tabs.remove(defaultTab.id!);
     }
 
+    if (failed.length > 0) {
+      alert(`Failed to open ${failed.length} tab(s):\n${failed.join('\n')}`);
+    }
     loadTabs();
   } catch (err: unknown) {
     alert('Failed to import tabs: ' + (err as Error).message);
