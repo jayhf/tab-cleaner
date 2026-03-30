@@ -11,7 +11,18 @@ export default defineConfig({
     incognito: 'spanning' as const,
     action: {
       default_title: 'Open Tab Manager',
-      default_icon: 'icon.svg',
+      default_icon: {
+        16: 'icon.svg',
+        32: 'icon.svg',
+        48: 'icon.svg',
+        96: 'icon.svg',
+      },
+    },
+    icons: {
+      16: 'icon.svg',
+      32: 'icon.svg',
+      48: 'icon.svg',
+      96: 'icon.svg',
     },
     ...(browser === 'firefox'
       ? {

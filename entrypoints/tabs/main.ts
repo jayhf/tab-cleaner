@@ -368,7 +368,7 @@ function render() {
         if (dupes.length > 1) tabEl.classList.add('tab-in-subgroup');
         if (tab.incognito) tabEl.classList.add('tab-incognito');
 
-        if (tab.favIconUrl) {
+        if (tab.favIconUrl && !tab.favIconUrl.startsWith('chrome://')) {
           const img = document.createElement('img');
           img.className = 'favicon';
           img.src = tab.favIconUrl;
