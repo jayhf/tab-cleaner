@@ -32,6 +32,12 @@ npm run dev             # Chrome with hot reload
 npm run dev:firefox     # Firefox with hot reload
 ```
 
+With Nix:
+
+```bash
+nix develop -c npx wxt -b firefox
+```
+
 ## Install
 
 ### Chrome
